@@ -67,7 +67,7 @@ public class OrbitCamera : MonoBehaviour {
 	}
 
 	void LateUpdate () {
-        gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focusPoint)) * gravityAlignment;
+        UpdateGravityAlignment();
 		UpdateFocusPoint();
 		
 		if (ManualRotation() || AutomaticRotation()) {
@@ -172,5 +172,25 @@ public class OrbitCamera : MonoBehaviour {
 	static float GetAngle (Vector2 direction) {
 		float angle = Mathf.Acos(direction.y) * Mathf.Rad2Deg;
 		return direction.x < 0f ? 360f - angle : angle;
+	}
+
+	void UpdateGravityAlignment(){
+		Vector3 fromUp = gravityAlignment * Vector3.up;
+		Vector toUp = CustomGravity.GetUpAxis(focusPoint);
+		float dot = Mathf.Clamp(Vector3.Dot(fromUp, toUp), -1f, 1f);
+		float angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
+		float maxAngle = upAlignmentSpeed * Time.deltaTime;
+
+		Quaternion newAlignment = 
+		Quaternion.FromToRotation(fromUp, toUp) * gravityAlignment;
+		if(angle <= maxAngle){
+			gravityAlignment = newAlignment;
+		}
+		else{
+			gravityAlignment = Quaternion.SlerpUnclamped(
+				gravityAlignment, newAlignment, maxAngle / angle
+			);
+		}
+		
 	}
 }
